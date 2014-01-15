@@ -67,6 +67,9 @@ def hack_content(fname, data):
     pr_fmt = ''
     inside_block_state = {}
     finish_endif = False
+    SYNCSOURCE = ""
+    counter = 0
+    preline = ""
 
     def sub(regexp, repl, str):
         return re_cache(regexp).sub(repl, str)
@@ -103,6 +106,26 @@ def hack_content(fname, data):
 
         def w(line, result = result):
             result.append(line)
+
+        counter += 1
+
+        line = preline + line
+        preline = ""
+
+        if match(r'^/\* SYNCSOURCE = ".*" \*/\s*$'):
+            SYNCSOURCE = sub(r'" \*/\s*$', '', sub(r'^/\* SYNCSOURCE = "', '', line))
+            counter = 0
+            line = ""
+
+        if match(r'[^\\]\\$'):
+            preline = sub(r'\\$', '', line)
+            line = ""
+
+        if SYNCSOURCE:
+            if not inside_block_state[get_block_key(r'/\*', r'\*/')]:
+                w("#line " + str(counter) + ' "' + SYNCSOURCE + '"')
+        inside_block(r'/\*', r'\*/')
+        match_block_end(r'/\*', r'\*/')
 
         orig = line
         f = line.split()
@@ -391,9 +414,14 @@ def mkdir(dir):
 
 def cp(src, dst):
     mkdir(os.path.dirname(dst))
-    file(dst, 'w').write(file(src).read())
+    output_file = file(dst, 'w')
+    output_file.write('/* SYNCSOURCE = "' + os.getcwd() + "/" + src + '" */ \n')
+    output_file.write(file(src).read())
+    output_file.close()
 
 def copy_if_changed(src, dst):
+    def match(regexp):
+        return re_cache(regexp).search(line)
     for dir, subdirs, files in os.walk(src):
         ndir = dst + '/' + dir[len(src)+1:]
         mkdir(ndir)
@@ -401,7 +429,17 @@ def copy_if_changed(src, dst):
             old = ndir + '/' + fname
             new = dir + '/' + fname
             try:
-                if file(old).read() !=  file(new).read():
+                old_content = file(old).read()
+                filtered_old_content = ""
+                for line in old_content.splitlines():
+                    if not match(r'^/\* SYNCSOURCE = ".*" \*/\s*$'):
+                        filtered_old_content += line
+                new_content = file(new).read()
+                filtered_new_content = ""
+                for line in new_content.splitlines():
+                    if not match(r'^/\* SYNCSOURCE = ".*" \*/\s*$'):
+                        filtered_new_content += line
+                if filtered_old_content !=  filtered_new_content:
                     raise Exception('different.')
             except:
                 cp(new, old)
