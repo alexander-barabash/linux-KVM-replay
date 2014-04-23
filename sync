@@ -495,7 +495,7 @@ def header_sync(arch):
         unifdef(out)
     hack_file(T, 'include/linux/kvm_host.h')
     hack_file(T, 'include/linux/rkvm.h')
-    hack_file(T, 'include/linux/rkvm_data.h')
+    hack_file(T, 'include/linux/rkvm_host.h')
     hack_file(T, 'include/linux/bstream.h')
     hack_file(T, 'include/linux/bscript.h')
     hack_file(T, 'include/asm-%(arch)s/kvm_host.h' % { 'arch': arch })
