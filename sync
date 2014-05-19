@@ -403,7 +403,11 @@ def unifdef(fname):
     file(fname, 'w').write(data)
 
 hack_files = {
-    'x86': str.split('kvm_main.c rkvm.c bscript.c bstream.c mmu.c vmx.c svm.c x86.c x86.h irq.h lapic.c'
+    'x86': str.split('kvm_main.c mmu.c vmx.c svm.c x86.c x86.h irq.h lapic.c'
+                     ' rkvm.c'
+                     #' rkvm_preemption.h rkvm_preemption.c'
+                     ' bscript.c bstream.c'
+                     ' bstream_ops.c'
                      ' lapic.h i8254.c eventfd.c emulate.c async_pf.c'
                      ' assigned-dev.c cpuid.c pmu.c iommu.c paging_tmpl.h'),
 }
@@ -497,6 +501,7 @@ def header_sync(arch):
     hack_file(T, 'include/linux/rkvm.h')
     hack_file(T, 'include/linux/rkvm_host.h')
     hack_file(T, 'include/linux/bstream.h')
+    hack_file(T, 'include/linux/bstream_ops.h')
     hack_file(T, 'include/linux/bscript.h')
     hack_file(T, 'include/asm-%(arch)s/kvm_host.h' % { 'arch': arch })
     if arch == 'x86':
