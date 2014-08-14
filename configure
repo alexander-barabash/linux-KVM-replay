@@ -142,6 +142,7 @@ echo "kernel_extraversion=$kernel_extraversion"
 if [ ! -n $kernel_extraversion ] || [ $kernel_extraversion = $kernel_version_str ]; then
 	kernel_extraversion=0
 fi
+kernel_extraversion=0
 
 . "$kerneldir/.config"
 if [ "$CONFIG_PREEMPT_NOTIFIERS" = "" ]; then
