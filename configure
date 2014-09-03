@@ -105,6 +105,7 @@ elif [ -e "$kerneldir/.config" ]; then
 	kernel_version_str=$(awk '/Linux kernel version:/ { print $NF }' \
 		"$kerneldir/.config")
 fi
+echo "kernel_version_str=$kernel_version_str"
 if [ ! -n "$kernel_version_str" ]; then
 	echo
 	echo "Error: kernel version not found."
@@ -114,7 +115,9 @@ if [ ! -n "$kernel_version_str" ]; then
 fi
 
 kernel_version=`echo $kernel_version_str | sed 's/\([0-9]*\)\.[0-9]*\.[0-9]*.*/\1/'`
+echo "kernel_version=$kernel_version"
 kernel_patchlevel=`echo $kernel_version_str | sed 's/[0-9]*\.\([0-9]*\)\.[0-9]*.*/\1/'`
+echo "kernel_patchlevel=$kernel_patchlevel"
 if [ ! -n "$force_build" ]; then
 	if [ $kernel_version -eq 2 ] ||
 	   [ $kernel_version -eq 3 -a $kernel_patchlevel -lt $min_kernel_version ]; then
@@ -126,9 +129,11 @@ if [ ! -n "$force_build" ]; then
 fi
 
 kernel_extraversion=`echo $kernel_version_str | sed 's/[0-9]*\.[0-9]*\.[0-9]*\.\([0-9]*\)*.*/\1/'`
+echo "kernel_extraversion=$kernel_extraversion"
 if [ ! -n $kernel_extraversion ] || [ $kernel_extraversion = $kernel_version_str ]; then
 	kernel_extraversion=0
 fi
+kernel_extraversion=0
 
 . "$kerneldir/.config"
 

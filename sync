@@ -67,6 +67,9 @@ def hack_content(fname, data):
     pr_fmt = ''
     inside_block_state = {}
     finish_endif = False
+    SYNCSOURCE = ""
+    counter = 0
+    preline = ""
 
     def sub(regexp, repl, str):
         return re_cache(regexp).sub(repl, str)
@@ -103,6 +106,26 @@ def hack_content(fname, data):
 
         def w(line, result = result):
             result.append(line)
+
+        counter += 1
+
+        line = preline + line
+        preline = ""
+
+        if match(r'^/\* SYNCSOURCE = ".*" \*/\s*$'):
+            SYNCSOURCE = sub(r'" \*/\s*$', '', sub(r'^/\* SYNCSOURCE = "', '', line))
+            counter = 0
+            line = ""
+
+        if match(r'[^\\]\\$'):
+            preline = sub(r'\\$', '', line)
+            line = ""
+
+        if SYNCSOURCE:
+            if not inside_block_state[get_block_key(r'/\*', r'\*/')]:
+                w("#line " + str(counter) + ' "' + SYNCSOURCE + '"')
+        inside_block(r'/\*', r'\*/')
+        match_block_end(r'/\*', r'\*/')
 
         orig = line
         f = line.split()
@@ -409,6 +432,11 @@ def unifdef(fname):
 
 hack_files = {
     'x86': str.split('kvm_main.c mmu.c vmx.c svm.c x86.c x86.h irq.h lapic.c'
+                     ' rkvm.c'
+                     ' rkvm_internal.h'
+                     ' rkvm_preemption.h rkvm_preemption.c'
+                     ' bscript.c bstream.c'
+                     ' bstream_ops.c'
                      ' lapic.h i8254.c eventfd.c emulate.c async_pf.c'
                      ' assigned-dev.c cpuid.c pmu.c iommu.c paging_tmpl.h'),
 }
@@ -419,9 +447,14 @@ def mkdir(dir):
 
 def cp(src, dst):
     mkdir(os.path.dirname(dst))
-    file(dst, 'w').write(file(src).read())
+    output_file = file(dst, 'w')
+    output_file.write('/* SYNCSOURCE = "' + os.getcwd() + "/" + src + '" */ \n')
+    output_file.write(file(src).read())
+    output_file.close()
 
 def copy_if_changed(src, dst):
+    def match(regexp):
+        return re_cache(regexp).search(line)
     for dir, subdirs, files in os.walk(src):
         ndir = dst + '/' + dir[len(src)+1:]
         mkdir(ndir)
@@ -429,7 +462,17 @@ def copy_if_changed(src, dst):
             old = ndir + '/' + fname
             new = dir + '/' + fname
             try:
-                if file(old).read() !=  file(new).read():
+                old_content = file(old).read()
+                filtered_old_content = ""
+                for line in old_content.splitlines():
+                    if not match(r'^/\* SYNCSOURCE = ".*" \*/\s*$'):
+                        filtered_old_content += line
+                new_content = file(new).read()
+                filtered_new_content = ""
+                for line in new_content.splitlines():
+                    if not match(r'^/\* SYNCSOURCE = ".*" \*/\s*$'):
+                        filtered_new_content += line
+                if filtered_old_content !=  filtered_new_content:
                     raise Exception('different.')
             except:
                 cp(new, old)
@@ -443,6 +486,10 @@ def header_sync(arch):
     rmtree(T)
     for file in (glob('%(linux)s/include/linux/kvm*.h' % { 'linux': linux }) +
                  glob('%(linux)s/include/linux/vfio.h' % { 'linux': linux }) +
+                 glob('%(linux)s/include/linux/rkvm*.h' % { 'linux': linux }) +
+                 glob('%(linux)s/include/linux/bscript*.h' % { 'linux': linux }) +
+                 glob('%(linux)s/include/linux/bstream*.h' % { 'linux': linux }) +
+                 glob('%(linux)s/include/uapi/linux/rkvm*.h' % { 'linux': linux }) +
                  glob('%(linux)s/include/uapi/linux/kvm*.h' % { 'linux': linux })):
         out = ('%(T)s/include/linux/%(name)s'
                % { 'T': T, 'name': os.path.basename(file) })
@@ -482,6 +529,11 @@ def header_sync(arch):
         cp(file, out)
         unifdef(out)
     hack_file(T, 'include/linux/kvm_host.h')
+    hack_file(T, 'include/linux/rkvm.h')
+    hack_file(T, 'include/linux/rkvm_host.h')
+    hack_file(T, 'include/linux/bstream.h')
+    hack_file(T, 'include/linux/bstream_ops.h')
+    hack_file(T, 'include/linux/bscript.h')
     hack_file(T, 'include/asm-%(arch)s/kvm_host.h' % { 'arch': arch })
     if arch == 'x86':
         hack_file(T, 'include/asm-x86/kvm_emulate.h')
