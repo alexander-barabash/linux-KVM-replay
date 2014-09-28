@@ -148,6 +148,13 @@ else
     config_fedora_kernel="#undef CONFIG_FEDORA_KERNEL"
 fi
 
+# Check if it is a Centos kernel, e.g. 3.10.0-123.8.1.el7.x86_64
+if echo "$kernel_version_str" | grep -qE '[0-9.-]+\.fc[0-9]+\..+'; then
+    config_centos_kernel="#define CONFIG_CENTOS_KERNEL 1"
+else
+    config_centos_kernel="#undef CONFIG_CENTOS_KERNEL"
+fi
+
 rm -f include/asm include/uapi/asm include-compat/asm
 mkdir -p include/uapi
 ln -sf asm-"$karch" include/asm
@@ -171,4 +178,5 @@ EOF
 cat <<EOF > kvm-kmod-config.h
 #define KERNEL_EXTRAVERSION $kernel_extraversion
 $config_fedora_kernel
+$config_centos_kernel
 EOF
