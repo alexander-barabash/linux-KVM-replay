@@ -23,7 +23,9 @@ typedef u64 phys_addr_t;
 #define cpu_has_hypervisor boot_cpu_has(X86_FEATURE_HYPERVISOR)
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,12,0) && \
+    (!defined(CONFIG_CENTOS_KERNEL) || \
+     LINUX_VERSION_CODE < KERNEL_VERSION(3,10,0))
 #include <linux/string.h>
 #include <asm/processor.h>
 static inline uint32_t hypervisor_cpuid_base(const char *sig, uint32_t leaves)
