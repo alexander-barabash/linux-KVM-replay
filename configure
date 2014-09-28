@@ -176,7 +176,10 @@ KVM_VERSION=$(kvm_version)
 EOF
 
 cat <<EOF > kvm-kmod-config.h
+#ifndef KVM_KMOD_CONFIG_INCLUDED
+#define KVM_KMOD_CONFIG_INCLUDED
 #define KERNEL_EXTRAVERSION $kernel_extraversion
 $config_fedora_kernel
 $config_centos_kernel
+#endif
 EOF

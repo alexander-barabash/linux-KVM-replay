@@ -33,6 +33,7 @@ all:: prerequisite
 			-include $(if $(wildcard $(KERNELDIR)/include/generated), \
 				include/generated/autoconf.h, \
 				include/linux/autoconf.h) \
+			-include `pwd`/kvm-kmod-config.h \
 			-include `pwd`/$(ARCH_DIR)/external-module-compat.h" \
 		"$$@"
 
